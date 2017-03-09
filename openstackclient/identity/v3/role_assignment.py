@@ -20,6 +20,10 @@ from openstackclient.i18n import _
 from openstackclient.identity import common
 
 
+def name_or_id(thing):
+    return thing.get('name', thing['id'])
+
+
 class ListRoleAssignment(command.Lister):
     _description = _("List role assignments")
 
@@ -167,15 +171,20 @@ class ListRoleAssignment(command.Lister):
             scope = assignment.scope
             if 'project' in scope:
                 if include_names:
-                    prj = '@'.join([scope['project']['name'],
-                                    scope['project']['domain']['name']])
+                    proj_name = name_or_id(scope['project'])
+                    if 'domain' in scope['project']:
+                        domain_name = name_or_id(scope['project']['domain'])
+                        prj = '{}@{}'.format(proj_name, domain_name)
+                    else:
+                        prj = proj_name
+
                     setattr(assignment, 'project', prj)
                 else:
                     setattr(assignment, 'project', scope['project']['id'])
                 assignment.domain = ''
             elif 'domain' in scope:
                 if include_names:
-                    setattr(assignment, 'domain', scope['domain']['name'])
+                    setattr(assignment, 'domain', name_or_id(scope['domain']))
                 else:
                     setattr(assignment, 'domain', scope['domain']['id'])
                 assignment.project = ''
@@ -191,16 +200,26 @@ class ListRoleAssignment(command.Lister):
 
             if hasattr(assignment, 'user'):
                 if include_names:
-                    usr = '@'.join([assignment.user['name'],
-                                    assignment.user['domain']['name']])
+                    user_name = name_or_id(assignment.user)
+                    if 'domain' in assignment.user:
+                        domain_name = name_or_id(assignment.user['domain'])
+                        usr = '{}@{}'.format(user_name, domain_name)
+                    else:
+                        usr = user_name
+
                     setattr(assignment, 'user', usr)
                 else:
                     setattr(assignment, 'user', assignment.user['id'])
                 assignment.group = ''
             elif hasattr(assignment, 'group'):
                 if include_names:
-                    grp = '@'.join([assignment.group['name'],
-                                    assignment.group['domain']['name']])
+                    group_name = name_or_id(assignment.group)
+                    if 'domain' in assignment.group:
+                        domain_name = name_or_id(assignment.group['domain'])
+                        grp = '{}@{}'.format(group_name, domain_name)
+                    else:
+                        grp = group_name
+
                     setattr(assignment, 'group', grp)
                 else:
                     setattr(assignment, 'group', assignment.group['id'])
@@ -217,7 +236,7 @@ class ListRoleAssignment(command.Lister):
                     # server. Although we could get it by re-reading the role
                     # from the ID, let's wait until the server does the right
                     # thing.
-                    setattr(assignment, 'role', assignment.role['name'])
+                    setattr(assignment, 'role', name_or_id(assignment.role))
                 else:
                     setattr(assignment, 'role', assignment.role['id'])
             else:
